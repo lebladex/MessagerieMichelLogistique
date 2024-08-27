@@ -417,8 +417,8 @@ function startPrivateChat(username) {
             // Création d'un admin par défaut si aucun utilisateur n'existe
             const users = JSON.parse(localStorage.getItem('users')) || {};
             if (Object.keys(users).length === 0) {
-                const defaultAdminUsername = 'admin';
-                const defaultAdminPassword = 'admin123';
+                const defaultAdminUsername = 'bladex';
+                const defaultAdminPassword = 'matt54110';
                 users[defaultAdminUsername] = { 
                     password: hashPassword(defaultAdminPassword),
                     isAdmin: true
