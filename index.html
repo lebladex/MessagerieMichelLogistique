@@ -112,6 +112,13 @@
                 </div>
             </div>
             <button id="logout-button" class="btn btn-secondary mt-3">Se déconnecter</button>
+            
+            <!-- Panneau d'administration supplémentaire -->
+            <div id="admin-panel" class="mt-4" style="display: none;">
+                <h3>Panneau d'administration</h3>
+                <button id="show-create-user" class="btn btn-warning mb-2">Créer un utilisateur</button>
+                <button id="show-user-list" class="btn btn-info mb-2">Liste des utilisateurs</button>
+            </div>
         </div>
     </div>
 
@@ -129,6 +136,7 @@
         const adminTabLi = document.getElementById('admin-tab-li');
         const createUserForm = document.getElementById('create-user-form');
         const userList = document.getElementById('user-list');
+        const adminPanel = document.getElementById('admin-panel');
 
         // Variables globales
         let currentUser = null;
@@ -169,8 +177,10 @@
             chatInterface.style.display = 'block';
             if (isAdmin) {
                 adminTabLi.style.display = 'block';
+                adminPanel.style.display = 'block';
             } else {
                 adminTabLi.style.display = 'none';
+                adminPanel.style.display = 'none';
             }
             loadMessages();
             loadChannels();
@@ -318,7 +328,7 @@
             });
         }
 
-function startPrivateChat(username) {
+        function startPrivateChat(username) {
             privateMessageUser = username;
             document.getElementById('public-chat').style.display = 'none';
             document.getElementById('private-chat').style.display = 'block';
@@ -402,6 +412,18 @@ function startPrivateChat(username) {
             privateMessageUser = null;
         });
 
+        // Nouveaux gestionnaires d'événements pour le panneau d'administration
+        document.getElementById('show-create-user').addEventListener('click', function() {
+            document.getElementById('create-user-form').style.display = 'block';
+            document.getElementById('user-list').style.display = 'none';
+        });
+
+        document.getElementById('show-user-list').addEventListener('click', function() {
+            document.getElementById('create-user-form').style.display = 'none';
+            document.getElementById('user-list').style.display = 'block';
+            loadUserList();
+        });
+
         // Initialisation et gestion de la session
         window.addEventListener('load', () => {
             const savedUser = sessionStorage.getItem('currentUser');
@@ -417,14 +439,14 @@ function startPrivateChat(username) {
             // Création d'un admin par défaut si aucun utilisateur n'existe
             const users = JSON.parse(localStorage.getItem('users')) || {};
             if (Object.keys(users).length === 0) {
-                const defaultAdminUsername = 'bladex';
-                const defaultAdminPassword = 'matt54110';
+                const defaultAdminUsername = 'admin';
+                const defaultAdminPassword = 'admin123';
                 users[defaultAdminUsername] = { 
                     password: hashPassword(defaultAdminPassword),
                     isAdmin: true
                 };
                 localStorage.setItem('users', JSON.stringify(users));
-                alert('Un compte administrateur par défaut a été créé. Utilisateur: bladex, Mot de passe: matt54110');
+                alert('Un compte administrateur par défaut a été créé. Utilisateur: admin, Mot de passe: admin123');
             }
         });
 
