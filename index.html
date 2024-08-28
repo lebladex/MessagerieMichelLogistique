@@ -112,32 +112,10 @@
                 </div>
             </div>
             <button id="logout-button" class="btn btn-secondary mt-3">Se déconnecter</button>
-            
-            <!-- Panneau d'administration supplémentaire -->
-            <div id="admin-panel" class="mt-4" style="display: none;">
-                <h3>Panneau d'administration</h3>
-                <button id="show-create-user" class="btn btn-warning mb-2">Créer un utilisateur</button>
-                <button id="show-user-list" class="btn btn-info mb-2">Liste des utilisateurs</button>
-            </div>
         </div>
     </div>
 
     <script>
-        // Éléments DOM
-        const loginForm = document.getElementById('login-form');
-        const chatInterface = document.getElementById('chat-interface');
-        const messagesDiv = document.getElementById('messages');
-        const messageForm = document.getElementById('message-form');
-        const messageInput = document.getElementById('message-input');
-        const imageInput = document.getElementById('image-input');
-        const channelsDiv = document.getElementById('channels');
-        const onlineUsersDiv = document.getElementById('online-users');
-        const logoutButton = document.getElementById('logout-button');
-        const adminTabLi = document.getElementById('admin-tab-li');
-        const createUserForm = document.getElementById('create-user-form');
-        const userList = document.getElementById('user-list');
-        const adminPanel = document.getElementById('admin-panel');
-
         // Variables globales
         let currentUser = null;
         let isAdmin = false;
@@ -145,7 +123,7 @@
         let privateMessageUser = null;
         const secretKey = CryptoJS.lib.WordArray.random(256/8).toString();
 
-        // Fonctions de chiffrement
+        // Fonctions utilitaires
         function encryptMessage(message) {
             return CryptoJS.AES.encrypt(message, secretKey).toString();
         }
@@ -166,59 +144,41 @@
             return key === derivedKey;
         }
 
-        // Fonctions d'authentification
+        // Fonctions d'interface utilisateur
         function showLoginForm() {
-            loginForm.style.display = 'block';
-            chatInterface.style.display = 'none';
+            document.getElementById('login-form').style.display = 'block';
+            document.getElementById('chat-interface').style.display = 'none';
         }
 
-function showChatInterface() {
-    loginForm.style.display = 'none';
-    chatInterface.style.display = 'block';
-    console.log("isAdmin:", isAdmin); // Log pour vérifier la valeur de isAdmin
-    if (isAdmin) {
-        console.log("L'utilisateur est admin, affichage du panneau d'administration");
-        adminTabLi.style.display = 'block';
-        adminPanel.style.display = 'block';
-    } else {
-        console.log("L'utilisateur n'est pas admin, masquage du panneau d'administration");
-        adminTabLi.style.display = 'none';
-        adminPanel.style.display = 'none';
-    }
-    loadMessages();
-    loadChannels();
-    updateOnlineUsers();
-    if (isAdmin) {
-        loadUserList();
-    }
-}
+        function showChatInterface() {
+            document.getElementById('login-form').style.display = 'none';
+            document.getElementById('chat-interface').style.display = 'block';
+            document.getElementById('admin-tab-li').style.display = isAdmin ? 'block' : 'none';
+            loadMessages();
+            loadChannels();
+            updateOnlineUsers();
+            if (isAdmin) {
+                loadUserList();
+            }
+        }
 
-function login(e) {
-    e.preventDefault();
-    const username = document.getElementById('login-username').value;
-    const password = document.getElementById('login-password').value;
-    const users = JSON.parse(localStorage.getItem('users')) || {};
-    console.log("Tentative de connexion pour l'utilisateur:", username);
-    if (users[username] && verifyPassword(password, users[username].password)) {
-        currentUser = username;
-        isAdmin = users[username].isAdmin || false;
-        console.log("Connexion réussie. isAdmin:", isAdmin);
-        sessionStorage.setItem('currentUser', username);
-        sessionStorage.setItem('isAdmin', isAdmin);
-        showChatInterface();
-        setUserOnlineStatus(username, true);
-    } else {
-        console.log("Échec de la connexion");
-        alert('Nom d\'utilisateur ou mot de passe incorrect');
-    }
-}
-        function checkAdminStatus() {
-    console.log("Utilisateur actuel:", currentUser);
-    console.log("Est admin:", isAdmin);
-    console.log("adminTabLi display:", adminTabLi.style.display);
-    console.log("adminPanel display:", adminPanel.style.display);
-}
-document.body.insertAdjacentHTML('beforeend', '<button onclick="checkAdminStatus()">Vérifier statut admin</button>');
+        // Fonctions de gestion des utilisateurs
+        function login(e) {
+            e.preventDefault();
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            const users = JSON.parse(localStorage.getItem('users')) || {};
+            if (users[username] && verifyPassword(password, users[username].password)) {
+                currentUser = username;
+                isAdmin = users[username].isAdmin || false;
+                sessionStorage.setItem('currentUser', username);
+                sessionStorage.setItem('isAdmin', isAdmin);
+                showChatInterface();
+                setUserOnlineStatus(username, true);
+            } else {
+                alert('Nom d\'utilisateur ou mot de passe incorrect');
+            }
+        }
 
         function logout() {
             setUserOnlineStatus(currentUser, false);
@@ -227,6 +187,64 @@ document.body.insertAdjacentHTML('beforeend', '<button onclick="checkAdminStatus
             sessionStorage.removeItem('currentUser');
             sessionStorage.removeItem('isAdmin');
             showLoginForm();
+        }
+
+        function createUser(e) {
+            e.preventDefault();
+            if (!isAdmin) {
+                alert("Vous n'avez pas les droits d'administrateur pour créer un utilisateur.");
+                return;
+            }
+            const username = document.getElementById('new-username').value;
+            const password = document.getElementById('new-password').value;
+            const newIsAdmin = document.getElementById('is-admin').checked;
+            const users = JSON.parse(localStorage.getItem('users')) || {};
+            if (users[username]) {
+                alert('Ce nom d\'utilisateur existe déjà');
+            } else {
+                users[username] = { 
+                    password: hashPassword(password),
+                    isAdmin: newIsAdmin
+                };
+                localStorage.setItem('users', JSON.stringify(users));
+                alert('Utilisateur créé avec succès');
+                loadUserList();
+                e.target.reset();
+            }
+        }
+
+        function loadUserList() {
+            const users = JSON.parse(localStorage.getItem('users')) || {};
+            const userList = document.getElementById('user-list');
+            userList.innerHTML = '';
+            Object.keys(users).forEach(username => {
+                const userItem = document.createElement('li');
+                userItem.classList.add('list-group-item');
+                userItem.textContent = `${username} ${users[username].isAdmin ? '(Admin)' : ''}`;
+                userList.appendChild(userItem);
+            });
+        }
+
+        function setUserOnlineStatus(username, isOnline) {
+            const onlineUsers = JSON.parse(localStorage.getItem('onlineUsers')) || {};
+            onlineUsers[username] = isOnline;
+            localStorage.setItem('onlineUsers', JSON.stringify(onlineUsers));
+            updateOnlineUsers();
+        }
+
+        function updateOnlineUsers() {
+            const onlineUsers = JSON.parse(localStorage.getItem('onlineUsers')) || {};
+            const onlineUsersDiv = document.getElementById('online-users');
+            onlineUsersDiv.innerHTML = '';
+            Object.entries(onlineUsers).forEach(([username, isOnline]) => {
+                if (isOnline && username !== currentUser) {
+                    const userElement = document.createElement('div');
+                    userElement.textContent = username;
+                    userElement.classList.add('list-group-item', 'user-item');
+                    userElement.onclick = () => startPrivateChat(username);
+                    onlineUsersDiv.appendChild(userElement);
+                }
+            });
         }
 
         // Fonctions de gestion des messages
@@ -245,6 +263,7 @@ document.body.insertAdjacentHTML('beforeend', '<button onclick="checkAdminStatus
 
         function displayMessages() {
             const messages = JSON.parse(localStorage.getItem(`messages_${currentChannel}`)) || [];
+            const messagesDiv = document.getElementById('messages');
             messagesDiv.innerHTML = '';
             messages.forEach(msg => {
                 const messageElement = document.createElement('p');
@@ -300,10 +319,12 @@ document.body.insertAdjacentHTML('beforeend', '<button onclick="checkAdminStatus
 
         function loadChannels() {
             const channels = JSON.parse(localStorage.getItem('channels')) || ['general'];
+            const channelsDiv = document.getElementById('channels');
             channelsDiv.innerHTML = '';
             channels.forEach(channel => {
                 const channelElement = document.createElement('a');
                 channelElement.textContent = channel;
+                channelElement.classList.ad
                 channelElement.classList.add('list-group-item', 'channel');
                 if (channel === currentChannel) {
                     channelElement.classList.add('active');
@@ -317,28 +338,7 @@ document.body.insertAdjacentHTML('beforeend', '<button onclick="checkAdminStatus
             currentChannel = channel;
             loadChannels();
             loadMessages();
-        }
-
-        // Fonctions pour la gestion des utilisateurs
-        function setUserOnlineStatus(username, isOnline) {
-            const onlineUsers = JSON.parse(localStorage.getItem('onlineUsers')) || {};
-            onlineUsers[username] = isOnline;
-            localStorage.setItem('onlineUsers', JSON.stringify(onlineUsers));
-            updateOnlineUsers();
-        }
-
-        function updateOnlineUsers() {
-            const onlineUsers = JSON.parse(localStorage.getItem('onlineUsers')) || {};
-            onlineUsersDiv.innerHTML = '';
-            Object.entries(onlineUsers).forEach(([username, isOnline]) => {
-                if (isOnline && username !== currentUser) {
-                    const userElement = document.createElement('div');
-                    userElement.textContent = username;
-                    userElement.classList.add('list-group-item', 'user-item');
-                    userElement.onclick = () => startPrivateChat(username);
-                    onlineUsersDiv.appendChild(userElement);
-                }
-            });
+            document.getElementById('current-channel').textContent = channel;
         }
 
         function startPrivateChat(username) {
@@ -349,48 +349,46 @@ document.body.insertAdjacentHTML('beforeend', '<button onclick="checkAdminStatus
             displayPrivateMessages();
         }
 
-        function createUser(e) {
-            e.preventDefault();
-            if (!isAdmin) {
-                alert("Vous n'avez pas les droits d'administrateur pour créer un utilisateur.");
-                return;
-            }
-            const username = document.getElementById('new-username').value;
-            const password = document.getElementById('new-password').value;
-            const newIsAdmin = document.getElementById('is-admin').checked;
-            const users = JSON.parse(localStorage.getItem('users')) || {};
-            if (users[username]) {
-                alert('Ce nom d\'utilisateur existe déjà');
-            } else {
-                users[username] = { 
-                    password: hashPassword(password),
-                    isAdmin: newIsAdmin
+        // Initialisation de l'application
+        function initializeApp() {
+            // Création d'un admin par défaut si aucun utilisateur n'existe
+            let users = JSON.parse(localStorage.getItem('users')) || {};
+            if (Object.keys(users).length === 0) {
+                const defaultAdminUsername = 'admin';
+                const defaultAdminPassword = 'admin123';
+                users[defaultAdminUsername] = { 
+                    password: hashPassword(defaultAdminPassword),
+                    isAdmin: true
                 };
                 localStorage.setItem('users', JSON.stringify(users));
-                alert('Utilisateur créé avec succès');
-                loadUserList();
-                e.target.reset();
+                alert('Un compte administrateur par défaut a été créé. Utilisateur: admin, Mot de passe: admin123');
             }
-        }
 
-        function loadUserList() {
-            const users = JSON.parse(localStorage.getItem('users')) || {};
-            userList.innerHTML = '';
-            Object.keys(users).forEach(username => {
-                const userItem = document.createElement('li');
-                userItem.classList.add('list-group-item');
-                userItem.textContent = `${username} ${users[username].isAdmin ? '(Admin)' : ''}`;
-                userList.appendChild(userItem);
-            });
+            // Vérification de la session existante
+            const savedUser = sessionStorage.getItem('currentUser');
+            if (savedUser) {
+                currentUser = savedUser;
+                isAdmin = sessionStorage.getItem('isAdmin') === 'true';
+                showChatInterface();
+                setUserOnlineStatus(currentUser, true);
+            } else {
+                showLoginForm();
+            }
+
+            // Initialisation des canaux
+            if (!localStorage.getItem('channels')) {
+                localStorage.setItem('channels', JSON.stringify(['general']));
+            }
         }
 
         // Gestionnaires d'événements
         document.getElementById('login-form-element').addEventListener('submit', login);
-        logoutButton.addEventListener('click', logout);
-        createUserForm.addEventListener('submit', createUser);
+        document.getElementById('logout-button').addEventListener('click', logout);
+        document.getElementById('create-user-form').addEventListener('submit', createUser);
 
-        messageForm.addEventListener('submit', function(e) {
+        document.getElementById('message-form').addEventListener('submit', function(e) {
             e.preventDefault();
+            const messageInput = document.getElementById('message-input');
             const message = messageInput.value.trim();
             if (message) {
                 addMessage(message);
@@ -398,7 +396,7 @@ document.body.insertAdjacentHTML('beforeend', '<button onclick="checkAdminStatus
             }
         });
 
-        imageInput.addEventListener('change', function(e) {
+        document.getElementById('image-input').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
@@ -425,201 +423,15 @@ document.body.insertAdjacentHTML('beforeend', '<button onclick="checkAdminStatus
             privateMessageUser = null;
         });
 
-        // Nouveaux gestionnaires d'événements pour le panneau d'administration
-        document.getElementById('show-create-user').addEventListener('click', function() {
-            document.getElementById('create-user-form').style.display = 'block';
-            document.getElementById('user-list').style.display = 'none';
-        });
-
-        document.getElementById('show-user-list').addEventListener('click', function() {
-            document.getElementById('create-user-form').style.display = 'none';
-            document.getElementById('user-list').style.display = 'block';
-            loadUserList();
-        });
-
-        // Initialisation et gestion de la session
-        window.addEventListener('load', () => {
-            const savedUser = sessionStorage.getItem('currentUser');
-            if (savedUser) {
-                currentUser = savedUser;
-                isAdmin = sessionStorage.getItem('isAdmin') === 'true';
-                showChatInterface();
-                setUserOnlineStatus(currentUser, true);
-            } else {
-                showLoginForm();
-            }
-
-            // Création d'un admin par défaut si aucun utilisateur n'existe
-               // Création d'un admin par défaut si aucun utilisateur n'existe
-    const users = JSON.parse(localStorage.getItem('users')) || {};
-    console.log("Utilisateurs existants:", Object.keys(users));
-    if (Object.keys(users).length === 0) {
-        const defaultAdminUsername = 'admin';
-        const defaultAdminPassword = 'admin123';
-        users[defaultAdminUsername] = { 
-            password: hashPassword(defaultAdminPassword),
-            isAdmin: true
-        };
-        localStorage.setItem('users', JSON.stringify(users));
-        console.log("Compte admin par défaut créé");
-        alert('Un compte administrateur par défaut a été créé. Utilisateur: admin, Mot de passe: admin123');
-    }
-    console.log("Utilisateurs après vérification:", Object.keys(users));
-}
- function login(e) {
-    e.preventDefault();
-    const username = document.getElementById('login-username').value;
-    const password = document.getElementById('login-password').value;
-    const users = JSON.parse(localStorage.getItem('users')) || {};
-    console.log("Tentative de connexion pour l'utilisateur:", username);
-    console.log("Utilisateurs disponibles:", Object.keys(users));
-    if (users[username]) {
-        console.log("Utilisateur trouvé. isAdmin:", users[username].isAdmin);
-    }
-    if (users[username] && verifyPassword(password, users[username].password)) {
-        currentUser = username;
-        isAdmin = users[username].isAdmin || false;
-        console.log("Connexion réussie. isAdmin:", isAdmin);
-        sessionStorage.setItem('currentUser', username);
-        sessionStorage.setItem('isAdmin', isAdmin);
-        showChatInterface();
-        setUserOnlineStatus(username, true);
-    } else {
-        console.log("Échec de la connexion");
-        alert('Nom d\'utilisateur ou mot de passe incorrect');
-    }
-}
-
-function showChatInterface() {
-    loginForm.style.display = 'none';
-    chatInterface.style.display = 'block';
-    console.log("showChatInterface - isAdmin:", isAdmin);
-    if (isAdmin) {
-        console.log("L'utilisateur est admin, affichage du panneau d'administration");
-        document.getElementById('admin-tab-li').style.display = 'block';
-        document.getElementById('admin-panel').style.display = 'block';
-    } else {
-        console.log("L'utilisateur n'est pas admin, masquage du panneau d'administration");
-        document.getElementById('admin-tab-li').style.display = 'none';
-        document.getElementById('admin-panel').style.display = 'none';
-    }
-    loadMessages();
-    loadChannels();
-    updateOnlineUsers();
-    if (isAdmin) {
-        loadUserList();
-    }
-}
-
-// Fonction pour vérifier le statut admin
-function checkAdminStatus() {
-    console.log("Utilisateur actuel:", currentUser);
-    console.log("Est admin:", isAdmin);
-    console.log("adminTabLi display:", document.getElementById('admin-tab-li').style.display);
-    console.log("adminPanel display:", document.getElementById('admin-panel').style.display);
-    
-    // Vérification supplémentaire dans le localStorage
-    const users = JSON.parse(localStorage.getItem('users')) || {};
-    if (users[currentUser]) {
-        console.log("Statut admin dans localStorage:", users[currentUser].isAdmin);
-    } else {
-        console.log("Utilisateur non trouvé dans localStorage");
-    }
-}
-        function initializeApp() {
-    console.log("Initialisation de l'application...");
-
-    // Vérification et réinitialisation du localStorage si nécessaire
-    let users = JSON.parse(localStorage.getItem('users')) || {};
-    console.log("État initial des utilisateurs:", Object.keys(users));
-
-    // Forcer la création du compte admin
-    const defaultAdminUsername = 'admin';
-    const defaultAdminPassword = 'admin123';
-    
-    if (!users[defaultAdminUsername] || !users[defaultAdminUsername].isAdmin) {
-        console.log("Création forcée du compte admin par défaut");
-        users[defaultAdminUsername] = { 
-            password: hashPassword(defaultAdminPassword),
-            isAdmin: true
-        };
-        localStorage.setItem('users', JSON.stringify(users));
-        console.log("Compte admin par défaut créé ou mis à jour");
-        alert('Un compte administrateur par défaut a été créé ou mis à jour. Utilisateur: admin, Mot de passe: admin123');
-    } else {
-        console.log("Le compte admin existe déjà");
-    }
-
-    console.log("Utilisateurs après vérification:", Object.keys(users));
-
-    // Reste de l'initialisation...
-    const loginForm = document.getElementById('login-form-element');
-    const logoutButton = document.getElementById('logout-button');
-    const messageForm = document.getElementById('message-form');
-    const imageInput = document.getElementById('image-input');
-    const privateMessageForm = document.getElementById('private-message-form');
-    const currentChannelSpan = document.getElementById('current-channel');
-    const showCreateUserButton = document.getElementById('show-create-user');
-    const showUserListButton = document.getElementById('show-user-list');
-
-    // Ajout du bouton de vérification du statut admin
-    const adminCheckButton = document.createElement('button');
-    adminCheckButton.textContent = 'Vérifier statut admin';
-    adminCheckButton.onclick = checkAdminStatus;
-    document.body.appendChild(adminCheckButton);
-
-    // Gestionnaires d'événements
-    loginForm.addEventListener('submit', login);
-    logoutButton.addEventListener('click', logout);
-    createUserForm.addEventListener('submit', createUser);
-
-    // ... (le reste des gestionnaires d'événements)
-
-    // Vérification de la session existante
-    const savedUser = sessionStorage.getItem('currentUser');
-    if (savedUser) {
-        currentUser = savedUser;
-        isAdmin = sessionStorage.getItem('isAdmin') === 'true';
-        console.log("Session existante trouvée. Utilisateur:", currentUser, "isAdmin:", isAdmin);
-        showChatInterface();
-        setUserOnlineStatus(currentUser, true);
-    } else {
-        console.log("Aucune session existante, affichage du formulaire de connexion");
-        showLoginForm();
-    }
-}
-
-// Fonction pour vérifier le statut admin
-function checkAdminStatus() {
-    console.log("Vérification du statut admin...");
-    console.log("Utilisateur actuel:", currentUser);
-    console.log("Est admin (variable globale):", isAdmin);
-    
-    const adminTabLi = document.getElementById('admin-tab-li');
-    const adminPanel = document.getElementById('admin-panel');
-    
-    console.log("adminTabLi display:", adminTabLi ? adminTabLi.style.display : "Élément non trouvé");
-    console.log("adminPanel display:", adminPanel ? adminPanel.style.display : "Élément non trouvé");
-    
-    // Vérification dans le localStorage
-    const users = JSON.parse(localStorage.getItem('users')) || {};
-    if (users[currentUser]) {
-        console.log("Statut admin dans localStorage:", users[currentUser].isAdmin);
-    } else {
-        console.log("Utilisateur non trouvé dans localStorage");
-    }
-
-    console.log("Tous les utilisateurs:", Object.keys(users));
-}
-
-// Attendre que le DOM soit complètement chargé avant d'initialiser l'application
-document.addEventListener('DOMContentLoaded', initializeApp);
         // Mise à jour du statut hors ligne lors de la fermeture de la page
         window.addEventListener('beforeunload', () => {
             if (currentUser) {
                 setUserOnlineStatus(currentUser, false);
             }
         });
+
+        // Initialisation de l'application au chargement de la page
+        document.addEventListener('DOMContentLoaded', initializeApp);
     </script>
 </body>
 </html>
