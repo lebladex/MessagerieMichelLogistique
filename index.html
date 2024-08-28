@@ -45,6 +45,7 @@
                 <div class="col-md-3">
                     <h3>Canaux</h3>
                     <div id="channels" class="list-group mb-3"></div>
+                    <button id="add-channel-btn" class="btn btn-secondary mb-3">Ajouter un canal</button>
                     <h3>Utilisateurs en ligne</h3>
                     <div id="online-users" class="list-group"></div>
                 </div>
@@ -251,7 +252,7 @@
         function addMessage(message, isPrivate = false) {
             const storageKey = isPrivate ? `private_messages_${currentUser}_${privateMessageUser}` : `messages_${currentChannel}`;
             const messages = JSON.parse(localStorage.getItem(storageKey)) || [];
-            const encryptedMessage = encryptMessage(message);
+            const encryptedMessage = encryptMessage(JSON.stringify({content: message, type: message.startsWith('data:image') ? 'image' : 'text'}));
             messages.push({ user: currentUser, content: encryptedMessage, timestamp: new Date().toISOString() });
             localStorage.setItem(storageKey, JSON.stringify(messages));
             if (isPrivate) {
@@ -269,15 +270,17 @@
                 const messageElement = document.createElement('p');
                 let decryptedContent;
                 try {
-                    decryptedContent = decryptMessage(msg.content);
+                    decryptedContent = JSON.parse(decryptMessage(msg.content));
                 } catch (error) {
-                    decryptedContent = "Message chiffré (impossible à déchiffrer)";
+                    decryptedContent = {content: "Message chiffré (impossible à déchiffrer)", type: "text"};
                 }
-                messageElement.textContent = `${msg.user}: ${decryptedContent}`;
-                if (decryptedContent.startsWith('data:image')) {
+                messageElement.textContent = `${msg.user}: `;
+                if (decryptedContent.type === 'image') {
                     const img = document.createElement('img');
-                    img.src = decryptedContent;
+                    img.src = decryptedContent.content;
                     messageElement.appendChild(img);
+                } else {
+                    messageElement.textContent += decryptedContent.content;
                 }
                 messagesDiv.appendChild(messageElement);
             });
@@ -293,16 +296,15 @@
                 const messageElement = document.createElement('p');
                 let decryptedContent;
                 try {
-                    decryptedContent = decryptMessage(msg.content);
+                    decryptedContent = JSON.parse(decryptMessage(msg.content));
                 } catch (error) {
-                    decryptedContent = "Message chiffré (impossible à déchiffrer)";
+                    decryptedContent = {content: "Message chiffré (impossible à déchiffrer)", type: "text"};
                 }
-                messageElement.textContent = `${msg.user}: ${decryptedContent}`;
+                messageElement.textContent = `${msg.user}: ${decryptedContent.content}`;
                 privateMessagesDiv.appendChild(messageElement);
             });
             privateMessagesDiv.scrollTop = privateMessagesDiv.scrollHeight;
         }
-
         function loadMessages() {
             displayMessages();
         }
@@ -324,7 +326,6 @@
             channels.forEach(channel => {
                 const channelElement = document.createElement('a');
                 channelElement.textContent = channel;
-                channelElement.classList.ad
                 channelElement.classList.add('list-group-item', 'channel');
                 if (channel === currentChannel) {
                     channelElement.classList.add('active');
@@ -339,6 +340,8 @@
             loadChannels();
             loadMessages();
             document.getElementById('current-channel').textContent = channel;
+            document.getElementById('public-chat').style.display = 'block';
+            document.getElementById('private-chat').style.display = 'none';
         }
 
         function startPrivateChat(username) {
@@ -417,10 +420,11 @@
             }
         });
 
-        document.getElementById('current-channel').addEventListener('click', function() {
-            document.getElementById('public-chat').style.display = 'block';
-            document.getElementById('private-chat').style.display = 'none';
-            privateMessageUser = null;
+        document.getElementById('add-channel-btn').addEventListener('click', function() {
+            const channelName = prompt("Entrez le nom du nouveau canal :");
+            if (channelName) {
+                addChannel(channelName);
+            }
         });
 
         // Mise à jour du statut hors ligne lors de la fermeture de la page
