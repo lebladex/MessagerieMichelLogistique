@@ -450,19 +450,82 @@ document.body.insertAdjacentHTML('beforeend', '<button onclick="checkAdminStatus
             }
 
             // Création d'un admin par défaut si aucun utilisateur n'existe
-            const users = JSON.parse(localStorage.getItem('users')) || {};
-            if (Object.keys(users).length === 0) {
-                const defaultAdminUsername = 'admin';
-                const defaultAdminPassword = 'admin123';
-                users[defaultAdminUsername] = { 
-                    password: hashPassword(defaultAdminPassword),
-                    isAdmin: true
-                };
-                localStorage.setItem('users', JSON.stringify(users));
-                alert('Un compte administrateur par défaut a été créé. Utilisateur: admin, Mot de passe: admin123');
-            }
-        });
+               // Création d'un admin par défaut si aucun utilisateur n'existe
+    const users = JSON.parse(localStorage.getItem('users')) || {};
+    console.log("Utilisateurs existants:", Object.keys(users));
+    if (Object.keys(users).length === 0) {
+        const defaultAdminUsername = 'admin';
+        const defaultAdminPassword = 'admin123';
+        users[defaultAdminUsername] = { 
+            password: hashPassword(defaultAdminPassword),
+            isAdmin: true
+        };
+        localStorage.setItem('users', JSON.stringify(users));
+        console.log("Compte admin par défaut créé");
+        alert('Un compte administrateur par défaut a été créé. Utilisateur: admin, Mot de passe: admin123');
+    }
+    console.log("Utilisateurs après vérification:", Object.keys(users));
+}
+ function login(e) {
+    e.preventDefault();
+    const username = document.getElementById('login-username').value;
+    const password = document.getElementById('login-password').value;
+    const users = JSON.parse(localStorage.getItem('users')) || {};
+    console.log("Tentative de connexion pour l'utilisateur:", username);
+    console.log("Utilisateurs disponibles:", Object.keys(users));
+    if (users[username]) {
+        console.log("Utilisateur trouvé. isAdmin:", users[username].isAdmin);
+    }
+    if (users[username] && verifyPassword(password, users[username].password)) {
+        currentUser = username;
+        isAdmin = users[username].isAdmin || false;
+        console.log("Connexion réussie. isAdmin:", isAdmin);
+        sessionStorage.setItem('currentUser', username);
+        sessionStorage.setItem('isAdmin', isAdmin);
+        showChatInterface();
+        setUserOnlineStatus(username, true);
+    } else {
+        console.log("Échec de la connexion");
+        alert('Nom d\'utilisateur ou mot de passe incorrect');
+    }
+}
 
+function showChatInterface() {
+    loginForm.style.display = 'none';
+    chatInterface.style.display = 'block';
+    console.log("showChatInterface - isAdmin:", isAdmin);
+    if (isAdmin) {
+        console.log("L'utilisateur est admin, affichage du panneau d'administration");
+        document.getElementById('admin-tab-li').style.display = 'block';
+        document.getElementById('admin-panel').style.display = 'block';
+    } else {
+        console.log("L'utilisateur n'est pas admin, masquage du panneau d'administration");
+        document.getElementById('admin-tab-li').style.display = 'none';
+        document.getElementById('admin-panel').style.display = 'none';
+    }
+    loadMessages();
+    loadChannels();
+    updateOnlineUsers();
+    if (isAdmin) {
+        loadUserList();
+    }
+}
+
+// Fonction pour vérifier le statut admin
+function checkAdminStatus() {
+    console.log("Utilisateur actuel:", currentUser);
+    console.log("Est admin:", isAdmin);
+    console.log("adminTabLi display:", document.getElementById('admin-tab-li').style.display);
+    console.log("adminPanel display:", document.getElementById('admin-panel').style.display);
+    
+    // Vérification supplémentaire dans le localStorage
+    const users = JSON.parse(localStorage.getItem('users')) || {};
+    if (users[currentUser]) {
+        console.log("Statut admin dans localStorage:", users[currentUser].isAdmin);
+    } else {
+        console.log("Utilisateur non trouvé dans localStorage");
+    }
+}                               
         // Mise à jour du statut hors ligne lors de la fermeture de la page
         window.addEventListener('beforeunload', () => {
             if (currentUser) {
