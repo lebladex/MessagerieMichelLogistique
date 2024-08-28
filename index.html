@@ -172,40 +172,53 @@
             chatInterface.style.display = 'none';
         }
 
-        function showChatInterface() {
-            loginForm.style.display = 'none';
-            chatInterface.style.display = 'block';
-            if (isAdmin) {
-                adminTabLi.style.display = 'block';
-                adminPanel.style.display = 'block';
-            } else {
-                adminTabLi.style.display = 'none';
-                adminPanel.style.display = 'none';
-            }
-            loadMessages();
-            loadChannels();
-            updateOnlineUsers();
-            if (isAdmin) {
-                loadUserList();
-            }
-        }
+function showChatInterface() {
+    loginForm.style.display = 'none';
+    chatInterface.style.display = 'block';
+    console.log("isAdmin:", isAdmin); // Log pour vérifier la valeur de isAdmin
+    if (isAdmin) {
+        console.log("L'utilisateur est admin, affichage du panneau d'administration");
+        adminTabLi.style.display = 'block';
+        adminPanel.style.display = 'block';
+    } else {
+        console.log("L'utilisateur n'est pas admin, masquage du panneau d'administration");
+        adminTabLi.style.display = 'none';
+        adminPanel.style.display = 'none';
+    }
+    loadMessages();
+    loadChannels();
+    updateOnlineUsers();
+    if (isAdmin) {
+        loadUserList();
+    }
+}
 
-        function login(e) {
-            e.preventDefault();
-            const username = document.getElementById('login-username').value;
-            const password = document.getElementById('login-password').value;
-            const users = JSON.parse(localStorage.getItem('users')) || {};
-            if (users[username] && verifyPassword(password, users[username].password)) {
-                currentUser = username;
-                isAdmin = users[username].isAdmin || false;
-                sessionStorage.setItem('currentUser', username);
-                sessionStorage.setItem('isAdmin', isAdmin);
-                showChatInterface();
-                setUserOnlineStatus(username, true);
-            } else {
-                alert('Nom d\'utilisateur ou mot de passe incorrect');
-            }
-        }
+function login(e) {
+    e.preventDefault();
+    const username = document.getElementById('login-username').value;
+    const password = document.getElementById('login-password').value;
+    const users = JSON.parse(localStorage.getItem('users')) || {};
+    console.log("Tentative de connexion pour l'utilisateur:", username);
+    if (users[username] && verifyPassword(password, users[username].password)) {
+        currentUser = username;
+        isAdmin = users[username].isAdmin || false;
+        console.log("Connexion réussie. isAdmin:", isAdmin);
+        sessionStorage.setItem('currentUser', username);
+        sessionStorage.setItem('isAdmin', isAdmin);
+        showChatInterface();
+        setUserOnlineStatus(username, true);
+    } else {
+        console.log("Échec de la connexion");
+        alert('Nom d\'utilisateur ou mot de passe incorrect');
+    }
+}
+        function checkAdminStatus() {
+    console.log("Utilisateur actuel:", currentUser);
+    console.log("Est admin:", isAdmin);
+    console.log("adminTabLi display:", adminTabLi.style.display);
+    console.log("adminPanel display:", adminPanel.style.display);
+}
+document.body.insertAdjacentHTML('beforeend', '<button onclick="checkAdminStatus()">Vérifier statut admin</button>');
 
         function logout() {
             setUserOnlineStatus(currentUser, false);
