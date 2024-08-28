@@ -525,7 +525,95 @@ function checkAdminStatus() {
     } else {
         console.log("Utilisateur non trouvé dans localStorage");
     }
-}                               
+}
+        function initializeApp() {
+    console.log("Initialisation de l'application...");
+
+    // Vérification et réinitialisation du localStorage si nécessaire
+    let users = JSON.parse(localStorage.getItem('users')) || {};
+    console.log("État initial des utilisateurs:", Object.keys(users));
+
+    // Forcer la création du compte admin
+    const defaultAdminUsername = 'admin';
+    const defaultAdminPassword = 'admin123';
+    
+    if (!users[defaultAdminUsername] || !users[defaultAdminUsername].isAdmin) {
+        console.log("Création forcée du compte admin par défaut");
+        users[defaultAdminUsername] = { 
+            password: hashPassword(defaultAdminPassword),
+            isAdmin: true
+        };
+        localStorage.setItem('users', JSON.stringify(users));
+        console.log("Compte admin par défaut créé ou mis à jour");
+        alert('Un compte administrateur par défaut a été créé ou mis à jour. Utilisateur: admin, Mot de passe: admin123');
+    } else {
+        console.log("Le compte admin existe déjà");
+    }
+
+    console.log("Utilisateurs après vérification:", Object.keys(users));
+
+    // Reste de l'initialisation...
+    const loginForm = document.getElementById('login-form-element');
+    const logoutButton = document.getElementById('logout-button');
+    const messageForm = document.getElementById('message-form');
+    const imageInput = document.getElementById('image-input');
+    const privateMessageForm = document.getElementById('private-message-form');
+    const currentChannelSpan = document.getElementById('current-channel');
+    const showCreateUserButton = document.getElementById('show-create-user');
+    const showUserListButton = document.getElementById('show-user-list');
+
+    // Ajout du bouton de vérification du statut admin
+    const adminCheckButton = document.createElement('button');
+    adminCheckButton.textContent = 'Vérifier statut admin';
+    adminCheckButton.onclick = checkAdminStatus;
+    document.body.appendChild(adminCheckButton);
+
+    // Gestionnaires d'événements
+    loginForm.addEventListener('submit', login);
+    logoutButton.addEventListener('click', logout);
+    createUserForm.addEventListener('submit', createUser);
+
+    // ... (le reste des gestionnaires d'événements)
+
+    // Vérification de la session existante
+    const savedUser = sessionStorage.getItem('currentUser');
+    if (savedUser) {
+        currentUser = savedUser;
+        isAdmin = sessionStorage.getItem('isAdmin') === 'true';
+        console.log("Session existante trouvée. Utilisateur:", currentUser, "isAdmin:", isAdmin);
+        showChatInterface();
+        setUserOnlineStatus(currentUser, true);
+    } else {
+        console.log("Aucune session existante, affichage du formulaire de connexion");
+        showLoginForm();
+    }
+}
+
+// Fonction pour vérifier le statut admin
+function checkAdminStatus() {
+    console.log("Vérification du statut admin...");
+    console.log("Utilisateur actuel:", currentUser);
+    console.log("Est admin (variable globale):", isAdmin);
+    
+    const adminTabLi = document.getElementById('admin-tab-li');
+    const adminPanel = document.getElementById('admin-panel');
+    
+    console.log("adminTabLi display:", adminTabLi ? adminTabLi.style.display : "Élément non trouvé");
+    console.log("adminPanel display:", adminPanel ? adminPanel.style.display : "Élément non trouvé");
+    
+    // Vérification dans le localStorage
+    const users = JSON.parse(localStorage.getItem('users')) || {};
+    if (users[currentUser]) {
+        console.log("Statut admin dans localStorage:", users[currentUser].isAdmin);
+    } else {
+        console.log("Utilisateur non trouvé dans localStorage");
+    }
+
+    console.log("Tous les utilisateurs:", Object.keys(users));
+}
+
+// Attendre que le DOM soit complètement chargé avant d'initialiser l'application
+document.addEventListener('DOMContentLoaded', initializeApp);
         // Mise à jour du statut hors ligne lors de la fermeture de la page
         window.addEventListener('beforeunload', () => {
             if (currentUser) {
